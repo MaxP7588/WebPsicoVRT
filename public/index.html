@@ -1,114 +1,37 @@
+<!-- index.html -->
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Unity VR Stream Viewer</title>
+    <title>Unity WebRTC Stream</title>
     <style>
-        #videoElement {
-            width: 100%;
-            max-width: 1280px;
-            margin: 20px auto;
-            display: block;
-        }
-        .status {
-            text-align: center;
-            margin: 10px;
-            padding: 10px;
-            background-color: #f0f0f0;
+        #videoCanvas {
+            width: 640px;
+            height: 480px;
+            border: 1px solid black;
         }
     </style>
 </head>
 <body>
-    <div class="status" id="status">Esperando conexión...</div>
-    <video id="videoElement" autoplay playsinline></video>
-
+    <canvas id="videoCanvas"></canvas>
+    
     <script>
-        const video = document.getElementById('videoElement');
-        const status = document.getElementById('status');
-        let peerConnection;
-
-        // Configurar WebSocket
         const ws = new WebSocket('ws://localhost:3000');
-
-        // Configurar WebRTC
-        const configuration = {
-            iceServers: [
-                { urls: 'stun:stun.l.google.com:19302' }
-            ]
-        };
-
-        function setupPeerConnection() {
-            peerConnection = new RTCPeerConnection(configuration);
-
-            // Manejar streams entrantes
-            peerConnection.ontrack = (event) => {
-                if (event.streams && event.streams[0]) {
-                    video.srcObject = event.streams[0];
-                    status.textContent = 'Stream conectado';
-                }
-            };
-
-            // Enviar candidatos ICE
-            peerConnection.onicecandidate = (event) => {
-                if (event.candidate) {
-                    const message = JSON.stringify({
-                        type: 'candidate',
-                        candidate: event.candidate
-                    });
-                    ws.send(message);
-                }
-            };
-
-            peerConnection.onconnectionstatechange = (event) => {
-                status.textContent = `Estado de conexión: ${peerConnection.connectionState}`;
-            };
-        }
-
-        // Manejar mensajes WebSocket
-        ws.onmessage = async (event) => {
-            const message = JSON.parse(event.data);
-
-            switch (message.type) {
-                case 'offer':
-                    if (!peerConnection) {
-                        setupPeerConnection();
+        const canvas = document.getElementById('videoCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        ws.onmessage = function(event) {
+            try {
+                const message = JSON.parse(event.data);
+                if (message.type === 'video') {
+                    // Convertir base64 a imagen
+                    const img = new Image();
+                    img.onload = function() {
+                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
                     }
-                    
-                    await peerConnection.setRemoteDescription(
-                        new RTCSessionDescription({ type: 'offer', sdp: message.sdp })
-                    );
-
-                    const answer = await peerConnection.createAnswer();
-                    await peerConnection.setLocalDescription(answer);
-
-                    ws.send(JSON.stringify({
-                        type: 'answer',
-                        sdp: answer.sdp
-                    }));
-                    break;
-
-                case 'candidate':
-                    if (peerConnection) {
-                        await peerConnection.addIceCandidate(
-                            new RTCIceCandidate(message.candidate)
-                        );
-                    }
-                    break;
-            }
-        };
-
-        ws.onopen = () => {
-            status.textContent = 'Conectado al servidor WebSocket';
-        };
-
-        ws.onerror = (error) => {
-            status.textContent = `Error de WebSocket: ${error.message}`;
-        };
-
-        ws.onclose = () => {
-            status.textContent = 'Desconectado del servidor';
-            if (peerConnection) {
-                peerConnection.close();
-                peerConnection = null;
+                    img.src = 'data:image/jpeg;base64,' + message.data;
+                }
+            } catch (e) {
+                console.error('Error al procesar mensaje:', e);
             }
         };
     </script>
