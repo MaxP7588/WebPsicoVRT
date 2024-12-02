@@ -3,15 +3,25 @@
 <head>
     <title>Unity WebRTC Stream</title>
     <link rel="stylesheet" href="styles.css">
+    <style>
+        .content {
+            margin-top: 60px; /* Ajusta este valor según la altura del encabezado */
+            position: relative;
+            width: 100%;
+            max-width: 1080px;
+        }
+    </style>
 </head>
 <body>
     <div class="header">
         <h1>Unity WebRTC Stream</h1>
+        <button id="logoutButton">Cerrar Sesión</button>
     </div>
-    <canvas id="videoCanvas" width="1920" height="1080"></canvas>
-    <button id="logoutButton">Cerrar Sesión</button>
+    <div class="content">
+        <canvas id="videoCanvas" width="1920" height="1080"></canvas>
+    </div>
     <div class="footer">
-        <p>&copy; 2023 PsicoVRT</p>
+        <p>&copy; 2024 PsicoVRT</p>
     </div>
     
     <script>

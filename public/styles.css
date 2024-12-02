@@ -34,6 +34,9 @@ body {
     cursor: pointer;
     border-radius: 5px;
     transition: background-color 0.3s ease;
+    position: absolute;
+    top: 10px;
+    right: 10px;
 }
 
 #logoutButton:hover {
@@ -48,11 +51,18 @@ body {
     padding: 10px 0;
     text-align: center;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 1000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
 .header h1 {
     margin: 0;
-    font-size: 24px;
+    flex-grow: 1;
 }
 
 /* Estilo del pie de página */
@@ -74,7 +84,7 @@ body {
 /* Estilo del formulario de inicio de sesión */
 form {
     background-color: white;
-    padding: 20px;
+    padding: 45px;
     border-radius: 5px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
