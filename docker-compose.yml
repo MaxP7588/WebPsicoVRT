@@ -1,0 +1,48 @@
+services:
+  db:
+    image: mysql:8.0
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: '0507'
+      MYSQL_DATABASE: psicovrt
+      MYSQL_ROOT_HOST: '%'
+    volumes:
+      - mysql-data:/var/lib/mysql
+    ports:
+      - "3307:3306"
+    networks:
+      - psicovrt
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    restart: always
+    ports:
+      - "8083:80"
+    environment:
+      PMA_HOST: db
+      MYSQL_ROOT_PASSWORD: '0507'
+    depends_on:
+      - db
+    networks:
+      - psicovrt
+
+  web:
+    build: .
+    ports:
+      - "3033:3033"
+    volumes:
+      - .:/usr/src/app
+      - /usr/src/app/node_modules
+    environment:
+      - NODE_ENV=development
+    depends_on:
+      - db
+    networks:
+      - psicovrt
+
+networks:
+  psicovrt:
+    driver: bridge
+
+volumes:
+  mysql-data:
