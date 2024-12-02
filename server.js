@@ -4,11 +4,15 @@ const WebSocket = require('ws');
 const path = require('path');
 const bodyParser = require('body-parser');
 const session = require('express-session');
-const authRouter = require('./auth');
+const authRouter = require('./controlador/auth');
 
 const app = express();
 const server = app.listen(process.env.PORT, () => 
     console.log(`Server running on port ${process.env.PORT}`));
+
+// Configurar body-parser
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
 
 // Configurar sesiones
 app.use(session({
@@ -31,6 +35,11 @@ app.get('/transmision', (req, res) => {
     } else {
         res.redirect('/login');
     }
+});
+
+// Ruta para servir la página de inicio
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 // Configurar servidor WebSocket

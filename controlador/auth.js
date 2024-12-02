@@ -1,59 +1,108 @@
+// controlador/auth.js
 require('dotenv').config();
 const express = require('express');
-const path = require('path');
 const mysql = require('mysql');
+const bodyParser = require('body-parser');
+const path = require('path');
+const crypto = require('crypto');
 const router = express.Router();
 
-// Configurar la conexión a la base de datos MySQL
-const db = mysql.createConnection({
-    host: process.env.DB_HOST,
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_NAME,
-    port: process.env.DB_PORT
-});
+// Configurar body-parser
+router.use(bodyParser.json());
+router.use(bodyParser.urlencoded({ extended: true }));
 
-db.connect((err) => {
-    if (err) {
-        console.error('Error conectando a la base de datos:', err);
-        return;
-    }
-    console.log('Conectado a la base de datos MySQL');
-});
+// Configuración de la base de datos con retry
+const dbConfig = {
+    host: process.env.DB_HOST || "db",
+    user: process.env.DB_USER || "root",
+    password: process.env.DB_PASSWORD || "0507",
+    database: process.env.DB_NAME || "psicovrt",
+    port: process.env.DB_PORT || 3306,
+    connectTimeout: 20000,
+    acquireTimeout: 20000
+};
+
+let db;
+
+function connectWithRetry() {
+    console.log('Intentando conectar a MySQL...');
+    db = mysql.createConnection(dbConfig);
+
+    db.connect(err => {
+        if (err) {
+            console.error('Error de conexión:', err);
+            console.log('Reintentando en 5 segundos...');
+            setTimeout(connectWithRetry, 5000);
+            return;
+        }
+        console.log('Conectado a MySQL!');
+    });
+
+    db.on('error', err => {
+        console.error('Error de DB:', err);
+        if (err.code === 'PROTOCOL_CONNECTION_LOST') {
+            connectWithRetry();
+        }
+    });
+}
+
+connectWithRetry();
+
+// Función para encriptar la contraseña
+function encryptPassword(password) {
+    return crypto.createHash('sha256').update(password).digest('base64');
+}
 
 // Ruta para servir la página de inicio de sesión
 router.get('/login', (req, res) => {
-    res.sendFile(path.join(__dirname, '..', 'public', 'vista', 'login.html'));
+    res.sendFile(path.join(__dirname, '..', 'public', 'login.html'));
 });
 
-// Ruta para manejar el envío del formulario de inicio de sesión
-router.post('/login', (req, res) => {
-    const { email, password } = req.body;
-
-    // Verificar las credenciales del usuario en la base de datos
-    const query = 'SELECT * FROM usuarios WHERE email = ? AND password = ?';
-    db.query(query, [email, password], (err, results) => {
-        if (err) {
-            console.error('Error ejecutando la consulta:', err);
-            res.status(500).json({ success: false, message: 'Error del servidor' });
-            return;
+router.post('/login', async (req, res) => {
+    try {
+        console.log('Body recibido:', req.body);
+        
+        if (!req.body || !req.body.email || !req.body.password) {
+            return res.status(400).json({
+                success: false,
+                message: 'Email y contraseña son requeridos'
+            });
         }
 
-        if (results.length > 0) {
-            req.session.authenticated = true;
-            res.json({ success: true });
-        } else {
-            res.json({ success: false, message: 'Correo electrónico o contraseña incorrectos' });
-        }
-    });
-});
+        const { email, password } = req.body;
+        const encryptedPassword = encryptPassword(password);
 
-// Middleware para verificar la autenticación
-router.use((req, res, next) => {
-    if (req.session.authenticated || req.path === '/login' || req.path === '/login.html') {
-        next();
-    } else {
-        res.redirect('/login');
+        db.query(
+            'SELECT * FROM usuarios WHERE email = ? AND password = ?',
+            [email, encryptedPassword],
+            (err, results) => {
+                if (err) {
+                    console.error('Error en query:', err);
+                    return res.status(500).json({
+                        success: false,
+                        message: 'Error de servidor',
+                        debug: process.env.NODE_ENV === 'development' ? err.message : null
+                    });
+                }
+
+                if (results && results.length > 0) {
+                    req.session.authenticated = true;
+                    req.session.userId = results[0].id_usuario;
+                    return res.json({ success: true });
+                }
+
+                res.status(401).json({
+                    success: false,
+                    message: 'Credenciales inválidas'
+                });
+            }
+        );
+    } catch (error) {
+        console.error('Error en /login:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error interno del servidor'
+        });
     }
 });
 
