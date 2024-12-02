@@ -2,16 +2,17 @@
 <html>
 <head>
     <title>Unity WebRTC Stream</title>
-    <style>
-        #videoCanvas {
-            width: 1080px;
-            height: 720px;
-            border: 1px solid black;
-        }
-    </style>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+    <div class="header">
+        <h1>Unity WebRTC Stream</h1>
+    </div>
     <canvas id="videoCanvas" width="1920" height="1080"></canvas>
+    <button id="logoutButton">Cerrar Sesión</button>
+    <div class="footer">
+        <p>&copy; 2023 PsicoVRT</p>
+    </div>
     
     <script>
         const ws = new WebSocket('ws://pacheco.chillan.ubiobio.cl:3033');
@@ -33,6 +34,23 @@
                 console.error('Error al procesar mensaje:', e);
             }
         };
+
+        document.getElementById('logoutButton').addEventListener('click', function() {
+            fetch('/logout', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    window.location.href = '/login';
+                } else {
+                    alert('Error al cerrar sesión');
+                }
+            });
+        });
     </script>
 </body>
 </html>
