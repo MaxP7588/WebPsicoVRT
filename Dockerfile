@@ -15,7 +15,7 @@ COPY . .
 COPY .env .env
 
 # Expone el puerto en el que la aplicación se ejecutará
-EXPOSE 3033
+EXPOSE 124
 
 # Comando para ejecutar la aplicación
 CMD ["node", "server.js"]

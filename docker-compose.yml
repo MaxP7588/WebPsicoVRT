@@ -9,27 +9,14 @@ services:
     volumes:
       - mysql-data:/var/lib/mysql
     ports:
-      - "3307:3306"
-    networks:
-      - psicovrt
-
-  phpmyadmin:
-    image: phpmyadmin/phpmyadmin
-    restart: always
-    ports:
-      - "8083:80"
-    environment:
-      PMA_HOST: db
-      MYSQL_ROOT_PASSWORD: '0507'
-    depends_on:
-      - db
+      - "3033:3306"
     networks:
       - psicovrt
 
   web:
     build: .
     ports:
-      - "3033:3033"
+      - "124:124"
     volumes:
       - .:/usr/src/app
       - /usr/src/app/node_modules
